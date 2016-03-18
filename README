@@ -1,0 +1,11 @@
+Sample:
+
+    perl6 -I. -MTest::Fuzz -e '
+    
+    
+    sub bla (Int $bla, Int $ble --> UInt) is fuzzed {
+       $bla + $ble
+    }
+    Test::Fuzz.run-fuzz-tests
+    
+    '
