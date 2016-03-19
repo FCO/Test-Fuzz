@@ -35,8 +35,7 @@ class Test::Fuzz {
 
 	my Fuzzer @fuzzers;
 
-	multi trait_mod:<is> (Routine $func, :$fuzzed!) is export {
-		#note $func.signature;
+	sub fuzz(Routine $func, :$fuzzed) is export {
 		my $counter	= 10;
 
 		my @data = [X] $func.signature.params.map(-> \param {
@@ -48,6 +47,10 @@ class Test::Fuzz {
 		my $returns	= $func.signature.returns;
 
 		@fuzzers.push(Fuzzer.new(:$name:$func:@data:$returns))
+	}
+
+	multi trait_mod:<is> (Routine $func, :$fuzzed!) is export {
+		fuzz($func, :$fuzzed);
 	}
 
 	method generate(Test::Fuzz:U: ::Type, Int \size) {
