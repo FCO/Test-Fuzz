@@ -1,3 +1,4 @@
+use Test;
 class Test::Fuzz {
 	class Fuzzer {
 		has		$.name;
@@ -5,17 +6,21 @@ class Test::Fuzz {
 		has Block	$.func;
 		has 		$.returns;
 
-		method run() {
-			for @.data -> @data {
-				my $return = $.func.(|@data);
-				$return.exception.throw if $return ~~ Failure;
-				CATCH {
-					default {
-						note "{ $.name }({ @data.join(", ") })  => { $return }";
-						die do given .backtrace[*-1] { .file, .line, .subname };
+		method run() is hidden-from-backtrace {
+			subtest {
+				for @.data -> @data {
+					my $return = $.func.(|@data);
+					$return.exception.throw if $return ~~ Failure;
+					CATCH {
+						default {
+							lives-ok {
+								.throw
+							}, "{ $.name }({ @data.join(", ") })"
+						}
 					}
+					pass "{ $.name }({ @data.join(", ") })"
 				}
-			}
+			}, $.name
 		}
 	}
 
@@ -24,6 +29,7 @@ class Test::Fuzz {
 	%generator{UInt} = gather {
 		take 0;
 		take 1;
+		take 3;
 		take 9999999999;
 		take $_ for (^10000000000).roll(*)
 	};
@@ -42,6 +48,9 @@ class Test::Fuzz {
 			my $type = param.type;
 			$?CLASS.generate($type, $counter)
 		});
+		if $func.signature.params.elems <= 1 {
+			@data = @data[0].map(-> $item {[$item]});
+		}
 
 		my $name	= $func.name;
 		my $returns	= $func.signature.returns;
