@@ -19,22 +19,19 @@ class Test::Fuzz {
 		}
 	}
 
-	my %generator =
-		UInt	=> {
-			gather {
-				take 0;
-				take 1;
-				take 9999999999;
-				take $_ for (^10000000000).roll(*)
-			}
-		},
-		Int	=> {
-			gather for %generator<UInt>() -> $int {
-				take $int;
-				take -$int unless $int == 0;
-			}
-		},
-	;
+	my %generator{Mu:U};
+
+	%generator{UInt} = gather {
+		take 0;
+		take 1;
+		take 9999999999;
+		take $_ for (^10000000000).roll(*)
+	};
+
+	%generator{Int}	= gather for @( %generator{UInt} ) -> $int {
+		take $int;
+		take -$int unless $int == 0;
+	};
 
 	my Fuzzer @fuzzers;
 
@@ -53,15 +50,15 @@ class Test::Fuzz {
 		@fuzzers.push(Fuzzer.new(:$name:$func:@data:$returns))
 	}
 
-	method generate(Test::Fuzz:U: ::Type, Int \index-num) {
+	method generate(Test::Fuzz:U: ::Type, Int \size) {
 		my $ret;
-		if %generator{Type.^name}:exists {
-			$ret = %generator{Type.^name}()[^index-num]
+		if %generator{Type}:exists {
+			$ret = %generator{Type}[^size]
 		}
 		$ret
 	}
 
-	method run-fuzz-tests(Test::Fuzz:U:) {
+	method run-tests(Test::Fuzz:U:) {
 		#say @fuzzers;
 		for @fuzzers -> $fuzz {
 			$fuzz.run;
