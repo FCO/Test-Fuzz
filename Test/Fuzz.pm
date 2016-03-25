@@ -54,13 +54,14 @@ class Test::Fuzz {
 
 	my Fuzzer @fuzzers;
 
-	sub fuzz(Routine $func, Int() :$counter = 100, Callable :$test) is export {
-		my \params = $func.signature.params;
-		my @data = ([X] params.map(-> \param {
-			my $type = param.type;
-			$?CLASS.generate($type, $counter)
+	sub fuzz(Routine $func, Int() :$counter = 100, Callable :$test, :@generators is copy) is export {
+		dd $func;
+		@generators = $func.signature.params.map(*.type.^name) unless @generators;
+		dd @generators;
+		my @data = ([X] @generators.map(-> \type {
+			$?CLASS.generate(type, $counter)
 		}))[^$counter];
-		if params.elems <= 1 {
+		if @generators.elems <= 1 {
 			@data = @data[0].map(-> $item {[$item]});
 		}
 
@@ -79,19 +80,16 @@ class Test::Fuzz {
 		fuzz($func);
 	}
 
-	proto method generate(Test::Fuzz:U:|) {
-		{*}
-	}
-
-	multi method generate(Test::Fuzz:U: ::Type, Int() \size) {
-		$.generate(Type.^name, size);
-	}
 	multi method generate(Test::Fuzz:U: Str \type, Int() \size = 100) {
 		my $ret;
 		if %generator{type}:exists {
 			$ret = %generator{type}[^size]
 		}
 		$ret
+	}
+
+	multi method generate(Test::Fuzz:U: ::Type, Int() \size) {
+		$.generate(Type.^name, size);
 	}
 
 	method run-tests(Test::Fuzz:U:) {
