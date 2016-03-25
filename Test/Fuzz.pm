@@ -3,13 +3,14 @@ class Test::Fuzz {
 	class Fuzzer {
 		has		$.name;
 		has 		@.data;
+		has Callable	$.get-data;
 		has Block	$.func;
 		has 		$.returns;
 		has Callable	$.test;
 
-		method run() {
-		#method run() is hidden-from-backtrace {
+		method run() is hidden-from-backtrace {
 			subtest {
+				@!data = $.get-data.() unless @!data;
 				for @.data -> @data {
 					my $return = $.func.(|@data);
 					$return.exception.throw if $return ~~ Failure;
@@ -55,25 +56,25 @@ class Test::Fuzz {
 	my Fuzzer @fuzzers;
 
 	sub fuzz(Routine $func, Int() :$counter = 100, Callable :$test, :@generators is copy) is export {
-		dd $func;
 		@generators = $func.signature.params.map(*.type) unless @generators;
 		@generators .= map: { $^type || $^type.^name };
-		dd @generators;
-		my @data = ([X] @generators.map(-> \type {
-			$?CLASS.generate(type, $counter)
-		}))[^$counter];
-		if @generators.elems <= 1 {
-			@data = @data[0].map(-> $item {[$item]});
-		}
+		my $get-data = sub {
+			my @data = ([X] @generators.map(-> \type {
+				$?CLASS.generate(type, $counter)
+			}))[^$counter];
+			if @generators.elems <= 1 {
+				@data = @data[0].map(-> $item {[$item]});
+			}
+			@data
+		};
 
 		my $name	= $func.name;
 		my $returns	= $func.signature.returns;
 
-		@fuzzers.push(Fuzzer.new(:$name:$func:@data:$returns:$test))
+		@fuzzers.push(Fuzzer.new(:$name:$func:$get-data:$returns:$test))
 	}
 
 	multi trait_mod:<is> (Routine $func, :%fuzzed!) is export {
-		dd %fuzzed;
 		fuzz($func, |%fuzzed);
 	}
 
@@ -94,7 +95,6 @@ class Test::Fuzz {
 	}
 
 	method run-tests(Test::Fuzz:U:) {
-		#say @fuzzers;
 		for @fuzzers -> $fuzz {
 			$fuzz.run;
 		}

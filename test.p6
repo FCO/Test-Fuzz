@@ -15,6 +15,14 @@ sub blo (UInt $blo) is fuzzed({counter => 5, test => not *.is-prime, generators 
 	return $blo
 }
 
+subset Prime of UInt where *.is-prime;
+
+fuzz-generator("Prime") = (^Inf).grep: *.is-prime;
+
+sub blu (Prime $blu) is fuzzed({counter => 5, test => not *.is-prime, generators => ["Prime"]}) {
+	return $blu * $blu
+}
+
 multi MAIN(Bool :$fuzz!) {
 	Test::Fuzz.run-tests
 }
