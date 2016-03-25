@@ -56,7 +56,8 @@ class Test::Fuzz {
 
 	sub fuzz(Routine $func, Int() :$counter = 100, Callable :$test, :@generators is copy) is export {
 		dd $func;
-		@generators = $func.signature.params.map(*.type.^name) unless @generators;
+		@generators = $func.signature.params.map(*.type) unless @generators;
+		@generators .= map: { $^type || $^type.^name };
 		dd @generators;
 		my @data = ([X] @generators.map(-> \type {
 			$?CLASS.generate(type, $counter)
