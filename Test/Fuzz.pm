@@ -7,7 +7,8 @@ class Test::Fuzz {
 		has 		$.returns;
 		has Callable	$.test;
 
-		method run() is hidden-from-backtrace {
+		method run() {
+		#method run() is hidden-from-backtrace {
 			subtest {
 				for @.data -> @data {
 					my $return = $.func.(|@data);
@@ -28,10 +29,14 @@ class Test::Fuzz {
 		}
 	}
 
-	my Iterable %generator{Mu:U};
+	my Iterable %generator;
 
-	sub fuzz-generator(::Type) is export is rw {
-		%generator{Type};
+	multi fuzz-generator(Str \type) is export is rw {
+		%generator{type};
+	}
+
+	multi fuzz-generator(::Type) is export is rw {
+		%generator{Type.^name};
 	}
 
 	fuzz-generator(UInt) = gather {
@@ -42,7 +47,7 @@ class Test::Fuzz {
 		take $_ for (^10000000000).roll(*)
 	};
 
-	fuzz-generator(Int)	= gather for @( %generator{UInt} ) -> $int {
+	fuzz-generator(Int)	= gather for @( %generator<UInt> ) -> $int {
 		take $int;
 		take -$int unless $int == 0;
 	};
@@ -74,10 +79,17 @@ class Test::Fuzz {
 		fuzz($func);
 	}
 
-	method generate(Test::Fuzz:U: ::Type, Int() \size) {
+	proto method generate(Test::Fuzz:U:|) {
+		{*}
+	}
+
+	multi method generate(Test::Fuzz:U: ::Type, Int() \size) {
+		$.generate(Type.^name, size);
+	}
+	multi method generate(Test::Fuzz:U: Str \type, Int() \size = 100) {
 		my $ret;
-		if %generator{Type}:exists {
-			$ret = %generator{Type}[^size]
+		if %generator{type}:exists {
+			$ret = %generator{type}[^size]
 		}
 		$ret
 	}
