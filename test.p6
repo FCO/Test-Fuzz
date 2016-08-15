@@ -26,3 +26,10 @@ sub blu (Prime $blu) is fuzzed({counter => 5, test => not *.is-prime, generators
 multi MAIN(Bool :$fuzz!) {
 	Test::Fuzz.run-tests
 }
+
+multi MAIN {
+	say bla(1, 2);
+	ble(4);
+	bli(42);
+	say blo(42);
+}
