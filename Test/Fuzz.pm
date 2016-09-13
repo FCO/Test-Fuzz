@@ -1,11 +1,11 @@
 use Test;
 class Test::Fuzz {
 	class Fuzzer {
-		has		$.name;
-		has 		@.data;
+		has				$.name;
+		has 			@.data;
 		has Callable	$.get-data;
-		has Block	$.func;
-		has 		$.returns;
+		has Block		$.func;
+		has 			$.returns;
 		has Callable	$.test;
 
 		method run() is hidden-from-backtrace {
@@ -18,7 +18,7 @@ class Test::Fuzz {
 						default {
 							lives-ok {
 								.throw
-							}, "{ $.name }({ @data.join(", ") })"
+							}, "{ $.name }({ @data.map({.defined ?? $_ !! "({ $_.^name })"}).join(", ") })"
 						}
 					}
 					if $!test.defined and not $!test($return) {
@@ -41,6 +41,7 @@ class Test::Fuzz {
 	}
 
 	fuzz-generator(UInt) = gather {
+		take UInt;
 		take 0;
 		take 1;
 		take 3;
@@ -48,16 +49,26 @@ class Test::Fuzz {
 		take $_ for (^10000000000).roll(*)
 	};
 
-	fuzz-generator(Int)	= gather for @( %generator<UInt> ) -> $int {
-		take $int;
-		take -$int unless $int == 0;
+	fuzz-generator(Int)	= gather {
+		take Int;
+		for @( %generator<UInt> ).grep({.defined}) -> $int {
+			take $int;
+			take -$int unless $int == 0;
+		}
 	};
+
+	fuzz-generator(Int:D)	= @( %generator<Int> ).grep({.defined});
+
+	fuzz-generator(Int:U)	= gather loop {take Int};
 
 	my Fuzzer @fuzzers;
 
 	sub fuzz(Routine $func, Int() :$counter = 100, Callable :$test, :@generators is copy) is export {
-		@generators = $func.signature.params.map(*.type) unless @generators;
-		@generators .= map: { $^type || $^type.^name };
+		if @generators {
+			@generators .= map: { $^type || $^type.^name };
+		} else {
+			@generators = $func.signature.params.map({.type.^name ~ .modifier})
+		}
 		my $get-data = sub {
 			my @data = ([X] @generators.map(-> \type {
 				$?CLASS.generate(type, $counter)
@@ -71,7 +82,7 @@ class Test::Fuzz {
 		my $name	= $func.name;
 		my $returns	= $func.signature.returns;
 
-		@fuzzers.push(Fuzzer.new(:$name:$func:$get-data:$returns:$test))
+		@fuzzers.push(Fuzzer.new(:$name, :$func, :$get-data, :$returns, :$test))
 	}
 
 	multi trait_mod:<is> (Routine $func, :%fuzzed!) is export {
@@ -86,6 +97,8 @@ class Test::Fuzz {
 		my $ret;
 		if %generator{type}:exists {
 			$ret = %generator{type}[^size]
+		} else {
+			die "Generator for '{type}' does not exists"
 		}
 		$ret
 	}
