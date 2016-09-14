@@ -57,10 +57,6 @@ class Test::Fuzz {
 		}
 	};
 
-	fuzz-generator(Int:D)	= @( %generator<Int> ).grep({.defined});
-
-	fuzz-generator(Int:U)	= gather loop {take Int};
-
 	my Fuzzer @fuzzers;
 
 	sub fuzz(Routine $func, Int() :$counter = 100, Callable :$test, :@generators is copy) is export {
@@ -94,13 +90,28 @@ class Test::Fuzz {
 	}
 
 	multi method generate(Test::Fuzz:U: Str \type, Int() \size = 100) {
-		my $ret;
+		my @ret;
+		my $type = type ~~ /^^
+			$<type>	= (\w+)
+			':'
+			$<def>	= (<[UD]>)
+		$$/;
+		say $type;
 		if %generator{type}:exists {
-			$ret = %generator{type}[^size]
+			@ret = %generator{type}[^size]
+		} elsif ~$type<def> {
+			if ~$type<def> eq "U" {
+				@ret = ::(~$type<type>) xx size
+			} elsif %generator{~$type<type>}:exists {
+				@ret = gather for @( %generator{~$type<type>} ) -> $item {
+					last if $++ > size;
+					take $item if $item.defined
+				}
+			}
 		} else {
 			die "Generator for '{type}' does not exists"
 		}
-		$ret
+		@ret
 	}
 
 	multi method generate(Test::Fuzz:U: ::Type, Int() \size) {
