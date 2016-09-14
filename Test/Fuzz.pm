@@ -53,7 +53,7 @@ class Test::Fuzz {
 		take Int;
 		for @( %generator<UInt> ).grep({.defined}) -> $int {
 			take $int;
-			take -$int unless $int == 0;
+			take -$int;
 		}
 	};
 
