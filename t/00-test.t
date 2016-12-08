@@ -34,6 +34,10 @@ sub bla (Int $bla, Int:D $ble --> Int) is fuzzed {
 	$bla + $ble
 }
 
+sub string-test(Str $s1, Str:D $s2) is fuzzed {
+	say "$s1 - $s2"
+}
+
 #`{{{
 class Bla is Any {
 	method ble(Int $a) is fuzzed {

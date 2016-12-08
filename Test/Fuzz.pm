@@ -32,15 +32,31 @@ class Test::Fuzz {
 
 	my Iterable %generator;
 
-	multi fuzz-generator(Str \type) is export is rw {
-		%generator{type};
-	}
-
 	multi fuzz-generator(::Type) is export is rw {
 		%generator{Type.^name};
 	}
 
-	fuzz-generator(UInt) = gather {
+	multi fuzz-generator(Str \type) is export is rw {
+		%generator{type};
+	}
+
+	fuzz-generator("Str") = gather {
+		take Str;
+		take "";
+		take "a";
+		take "a" x 9999999;
+		take "áéíóú";
+		take "\n";
+		take "\r";
+		take "\t";
+		take "\r\n";
+		take "\r\t\n";
+		loop {
+			take (0.chr .. 0xc3bf.chr).roll((^999999).pick).join
+		}
+	};
+
+	fuzz-generator("UInt") = gather {
 		take UInt;
 		take 0;
 		take 1;
@@ -49,7 +65,7 @@ class Test::Fuzz {
 		take $_ for (^10000000000).roll(*)
 	};
 
-	fuzz-generator(Int)	= gather {
+	fuzz-generator("Int")	= gather {
 		take Int;
 		for @( %generator<UInt> ).grep({.defined}) -> $int {
 			take $int;
@@ -96,7 +112,6 @@ class Test::Fuzz {
 			':'
 			$<def>	= (<[UD]>)
 		$$/;
-		say $type;
 		if %generator{type}:exists {
 			@ret = %generator{type}[^size]
 		} elsif ~$type<def> {
