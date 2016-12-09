@@ -1,4 +1,3 @@
-use lib ".";
 use Test::Fuzz;
 
 sub bla (Int $bla, Int $ble --> UInt) is fuzzed {
@@ -11,7 +10,7 @@ sub ble (Int $ble) is fuzzed {
 
 sub bli (Int $bli) is fuzzed(:counter(3)) {}
 
-sub blo (UInt $blo) is fuzzed({counter => 5, test => not *.is-prime, generators => [UInt]}) {
+sub blo (UInt $blo) is fuzzed({counter => 5, test => not *.is-prime}) {
 	return $blo
 }
 
@@ -19,7 +18,7 @@ subset Prime of UInt where *.is-prime;
 
 fuzz-generator("Prime") = (^Inf).grep: *.is-prime;
 
-sub blu (Prime $blu) is fuzzed({counter => 5, test => not *.is-prime, generators => ["Prime"]}) {
+sub blu (Prime $blu) is fuzzed({test => not *.is-prime}) {
 	return $blu * $blu
 }
 
