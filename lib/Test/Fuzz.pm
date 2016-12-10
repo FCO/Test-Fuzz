@@ -1,4 +1,5 @@
 use Test;
+my @proms;
 class Test::Fuzz {
 	class Fuzzer {
 		has				$.name;
@@ -82,10 +83,12 @@ class Test::Fuzz {
 		my @sups = @generators.map(-> $type, $constraint {
 			my $supplier = Supplier.new;
 			$?CLASS.generate($type, $constraint, $supplier, $counter);
-			$supplier.Supply.tap: &say;
+			#$supplier.Supply.tap: &say;
 			$supplier.Supply
 		});
 		my $get-data = Supply.zip(|@sups);
+		say @sups;
+		$get-data.tap: &say;
 
 		my $name	= $func.name;
 		my $returns	= $func.signature.returns;
@@ -114,14 +117,14 @@ class Test::Fuzz {
 		my %types := set |::.values.grep(! *.defined), |%?RESOURCES<classes>.IO.lines.map: {::($_)};
 		my @types = %types.keys.grep: ::(~$type<type>);
 		@ret = @types if not $type<def>.defined or ~$type<def> eq "U";
-		await do for @types -> $sub {
-			do if %generator{$sub.^name}:exists {
+		@proms.push: start for @types -> $sub {
+			@proms.push: do if %generator{$sub.^name}:exists {
 				@proms.push: start {
 					my $c = 0;
 					for @( %generator{$sub.^name} ) -> $item {
 						last if $c++ > size²;
-						#say "{$item} ~~ {~$type<type>} ~~ $constraints";
-						next unless $item ~~ ::(~$type<type>) and $item ~~ $constraints;
+						say "{$item} ~~ {~$type<type>} ~~ $constraints";
+						#next unless $item ~~ ::(~$type<type>) and $item ~~ $constraints;
 						#say $item;
 						$supplier.emit: $item
 					}
@@ -141,5 +144,6 @@ class Test::Fuzz {
 		for @fuzzers -> $fuzz {
 			$fuzz.run;
 		}
+		await @proms;
 	}
 }

@@ -4,6 +4,7 @@ sub bla (Int $bla, Int $ble --> UInt) is fuzzed {
 	$bla + $ble
 }
 
+#`[[[
 sub ble (Int $ble) is fuzzed {
 	die "it is prime!" if $ble.is-prime
 }
@@ -21,14 +22,15 @@ fuzz-generator("Prime") = (^Inf).grep: *.is-prime;
 sub blu (Prime $blu) is fuzzed({test => not *.is-prime}) {
 	return $blu * $blu
 }
+]]]
 
 multi MAIN(Bool :$fuzz!) {
 	Test::Fuzz.run-tests
 }
 
 multi MAIN {
-	say bla(1, 2);
-	ble(4);
-	bli(42);
-	say blo(42);
+	#say bla(1, 2);
+	#ble(4);
+	#bli(42);
+	#say blo(42);
 }
