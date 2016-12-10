@@ -8,7 +8,8 @@ class Test::Fuzz {
 		has 			$.returns;
 		has Callable	$.test;
 
-		method run() is hidden-from-backtrace {
+		#method run() is hidden-from-backtrace {
+		method run() {
 			subtest {
 				@!data = $.get-data.() unless @!data;
 				for @.data -> @data {
@@ -22,7 +23,7 @@ class Test::Fuzz {
 						}
 					}
 					if $!test.defined and not $!test($return) {
-						flunk "{ $.name }({ @data.join(", ") })"
+						flunk "{ $.name }({ @data.map(*.perl).join(", ") })"
 					}
 					pass "{ $.name }({ @data.join(", ") })"
 				}
@@ -71,17 +72,18 @@ class Test::Fuzz {
 
 	my Fuzzer @fuzzers;
 
-	sub fuzz(Routine $func, Int() :$counter = 100, Callable :$test, :@generators is copy) is export {
+	sub fuzz(Routine $func, Int() :$counter = 1000, Callable :$test, :@generators is copy) is export {
 		if @generators {
-			@generators .= map: { $^type || $^type.^name };
+			@generators .= map: { ($^type || $^type.^name), all() };
 		} else {
-			@generators = $func.signature.params.map({.type.^name ~ .modifier})
+			@generators = $func.signature.params.map({|(.type.^name ~ .modifier, .constraints)})
 		}
 		my $get-data = sub {
-			my @data = ([X] @generators.map(-> \type {
-				$?CLASS.generate(type, $counter)
-			}))[^$counter];
-			if @generators.elems <= 1 {
+			my @data = ([X] @generators.map(-> \type, \constraints {
+				say "type: {type}; constraints: {constraints}";
+				$?CLASS.generate(type, constraints, $counter)
+			})).pick($counter);
+			if @generators.elems <= 2 {
 				@data = @data[0].map(-> $item {[$item]});
 			}
 			@data
@@ -101,7 +103,7 @@ class Test::Fuzz {
 		fuzz($func);
 	}
 
-	multi method generate(Test::Fuzz:U: Str \type, Int() \size = 100) {
+	multi method generate(Test::Fuzz:U: Str \type, Mu \constraints, Int() \size = 1000) {
 		my @ret;
 		my $type = type ~~ /^^
 			$<type>	= (\w+)
@@ -113,23 +115,24 @@ class Test::Fuzz {
 		my $loaded-types	= set |::.values.grep(! *.defined);
 		my $builtin-types	= set |%?RESOURCES<classes>.IO.lines.map({::($_)});
 		my %types			:= $loaded-types ∪ $builtin-types;
-		my @types = %types.keys.grep: ::(~$type<type>);
-		@ret = @types if not $type<def>.defined or ~$type<def> eq "U";
-		my %indexes := BagHash.new;
-		while @ret.elems < size² {
+		my @types			= %types.keys.grep: ::(~$type<type>);
+		@ret				= @types if not $type<def>.defined or ~$type<def> eq "U";
+		my %indexes			:= BagHash.new;
+		while @ret.elems < size {
 			for @types -> $sub {
 				#say $sub;
 				if %generator{$sub.^name}:exists {
-					#say %generator{$sub.^name}[%indexes{$sub.^name}++];
-					@ret.push: %generator{$sub.^name}[%indexes{$sub.^name}++]
+					my $item = %generator{$sub.^name}[%indexes{$sub.^name}++];
+					#say $item;
+					@ret.push: $item if $item ~~ ::(~$type<type>) and $item ~~ constraints;
 				}
 			}
 		}
 		@ret
 	}
 
-	multi method generate(Test::Fuzz:U: ::Type, Int() \size) {
-		$.generate(Type.^name, size);
+	multi method generate(Test::Fuzz:U: ::Type, Mu \constraints, Int() \size) {
+		$.generate(Type.^name, constraints, size);
 	}
 
 	method run-tests(Test::Fuzz:U:) {
