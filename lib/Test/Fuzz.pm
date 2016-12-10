@@ -41,7 +41,6 @@ class Test::Fuzz {
 	}
 
 	fuzz-generator("Str") = gather {
-		take Str;
 		take "";
 		take "a";
 		take "a" x 9999999;
@@ -57,7 +56,6 @@ class Test::Fuzz {
 	};
 
 	fuzz-generator("UInt") = gather {
-		take UInt;
 		take 0;
 		take 1;
 		take 3;
@@ -66,9 +64,7 @@ class Test::Fuzz {
 	};
 
 	fuzz-generator("Int")	= gather {
-		take Int;
 		for @( %generator<UInt> ).grep({.defined}) -> $int {
-			take $int;
 			take -$int;
 		}
 	};
@@ -109,22 +105,25 @@ class Test::Fuzz {
 		my @ret;
 		my $type = type ~~ /^^
 			$<type>	= (\w+)
-			':'
-			$<def>	= (<[UD]>)
+			[
+				':'
+				$<def>	= (<[UD]>)
+			]?
 		$$/;
-		if %generator{type}:exists {
-			@ret = %generator{type}[^size]
-		} elsif ~$type<def> {
-			if ~$type<def> eq "U" {
-				@ret = ::(~$type<type>) xx size
-			} elsif %generator{~$type<type>}:exists {
-				@ret = gather for @( %generator{~$type<type>} ) -> $item {
-					last if $++ > size;
-					take $item if $item.defined
+		my $loaded-types	= set |::.values.grep(! *.defined);
+		my $builtin-types	= set |%?RESOURCES<classes>.IO.lines.map({::($_)});
+		my %types			:= $loaded-types ∪ $builtin-types;
+		my @types = %types.keys.grep: ::(~$type<type>);
+		@ret = @types if not $type<def>.defined or ~$type<def> eq "U";
+		my %indexes := BagHash.new;
+		while @ret.elems < size² {
+			for @types -> $sub {
+				#say $sub;
+				if %generator{$sub.^name}:exists {
+					#say %generator{$sub.^name}[%indexes{$sub.^name}++];
+					@ret.push: %generator{$sub.^name}[%indexes{$sub.^name}++]
 				}
 			}
-		} else {
-			die "Generator for '{type}' does not exists"
 		}
 		@ret
 	}
