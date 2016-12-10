@@ -1,7 +1,12 @@
 use lib ".";
 use Test::Fuzz;
 
+#`{{{
 sub bla (Int $bla, Int $ble --> UInt) is fuzzed {
+	$bla + $ble
+}
+
+sub bla2 (Int:D $bla, Int:D $ble --> UInt) is fuzzed {
 	$bla + $ble
 }
 
@@ -22,14 +27,23 @@ fuzz-generator("Prime") = (^Inf).grep: *.is-prime;
 sub blu (Prime $blu) is fuzzed({counter => 5, test => not *.is-prime, generators => ["Prime"]}) {
 	return $blu * $blu
 }
+}}}
 
-multi MAIN(Bool :$fuzz!) {
-	Test::Fuzz.run-tests
+sub bla (Int $bla, Int:D $ble --> Int) is fuzzed {
+	die unless $bla.defined;
+	$bla + $ble
 }
 
-multi MAIN {
-	say bla(1, 2);
-	ble(4);
-	bli(42);
-	say blo(42);
+sub string-test(Str $s1, Str:D $s2) is fuzzed {
+	say "$s1 - $s2"
 }
+
+#`{{{
+class Bla is Any {
+	method ble(Int $a) is fuzzed {
+		die "Morreu!"
+	}
+}
+}}}
+
+Test::Fuzz.run-tests
