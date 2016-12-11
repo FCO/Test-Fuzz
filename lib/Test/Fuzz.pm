@@ -82,7 +82,8 @@ class Test::Fuzz {
 			do if $func.signature.params.elems > 0 {
 				my @data = ([X] @generators.map(-> \type, \constraints {
 					say "type: {type}; constraints: {constraints}; counter: {$counter}";
-					$?CLASS.generate(type, constraints, $counter / $func.signature.params.elems)
+					say "\$?CLASS.generate({type}, {constraints}, {$counter || 1000})";
+					$?CLASS.generate(type, constraints, $counter || 1000)
 				})).pick($counter);
 				if @generators.elems <= 2 {
 					@data = @data[0].map(-> $item {[$item]});
@@ -107,7 +108,7 @@ class Test::Fuzz {
 		fuzz($func);
 	}
 
-	multi method generate(Test::Fuzz:U: Str \type, Mu \constraints, Int() \size = 1000) {
+	method generate(Test::Fuzz:U: Str \type, Mu:D $constraints, Int $size) {
 		my @ret;
 		my $type = type ~~ /^^
 			$<type>	= (\w+)
@@ -116,31 +117,33 @@ class Test::Fuzz {
 				$<def>	= (<[UD]>)
 			]?
 		$$/;
-		my $test-type		= ::(~$type<type>);
+		my \test-type		= ::(~$type<type>);
 		my $loaded-types	= set |::.values.grep(not *.defined);
 		my $builtin-types	= set |%?RESOURCES<classes>.IO.lines.map({::($_)});
 		my $types			= $loaded-types ∪ $builtin-types;
+		#my $types			= $builtin-types;
 		my @types			= $types.keys.grep(sub (Mu \item) {
-			return item ~~ $test-type & constraints;
+			my Mu:U \i = item;
+			return so i ~~ test-type;
 			CATCH {return False}
 		});
-		@ret				= @types if not $type<def>.defined or ~$type<def> eq "U";
+		@ret				= @types.grep(sub (Mu \item) {
+			my Mu:U \i = item;
+			return so i ~~ $constraints;
+			CATCH {return False}
+		}) if not $type<def>.defined or ~$type<def> eq "U";
 		my %indexes			:= BagHash.new;
-		while @ret.elems < size {
+		while @ret.elems < $size {
 			for @types -> $sub {
 				#say $sub;
 				if %generator{$sub.^name}:exists {
 					my $item = %generator{$sub.^name}[%indexes{$sub.^name}++];
 					#say $item;
-					@ret.push: $item if $item ~~ $test-type and $item ~~ constraints;
+					@ret.push: $item if $item ~~ test-type & $constraints;
 				}
 			}
 		}
 		@ret
-	}
-
-	multi method generate(Test::Fuzz:U: ::Type, Mu \constraints, Int() \size) {
-		$.generate(Type.^name, constraints, size);
 	}
 
 	method run-tests(Test::Fuzz:U:) {
