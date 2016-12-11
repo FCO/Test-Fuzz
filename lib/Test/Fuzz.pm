@@ -25,7 +25,7 @@ class Test::Fuzz {
 					if $!test.defined and not $!test($return) {
 						flunk "{ $.name }({ @data.map(*.perl).join(", ") })"
 					}
-					pass "{ $.name }({ @data.join(", ") })"
+					pass "{ $.name }({ @data.map(*.perl).join(", ") })"
 				}
 			}, $.name
 		}
@@ -79,14 +79,18 @@ class Test::Fuzz {
 			@generators = $func.signature.params.map({|(.type.^name ~ .modifier, .constraints)})
 		}
 		my $get-data = sub {
-			my @data = ([X] @generators.map(-> \type, \constraints {
-				say "type: {type}; constraints: {constraints}";
-				$?CLASS.generate(type, constraints, $counter)
-			})).pick($counter);
-			if @generators.elems <= 2 {
-				@data = @data[0].map(-> $item {[$item]});
+			do if $func.signature.params.elems > 0 {
+				my @data = ([X] @generators.map(-> \type, \constraints {
+					say "type: {type}; constraints: {constraints}; counter: {$counter}";
+					$?CLASS.generate(type, constraints, $counter / $func.signature.params.elems)
+				})).pick($counter);
+				if @generators.elems <= 2 {
+					@data = @data[0].map(-> $item {[$item]});
+				}
+				@data
+			} else {
+				()
 			}
-			@data
 		};
 
 		my $name	= $func.name;
@@ -112,10 +116,14 @@ class Test::Fuzz {
 				$<def>	= (<[UD]>)
 			]?
 		$$/;
-		my $loaded-types	= set |::.values.grep(! *.defined);
+		my $test-type		= ::(~$type<type>);
+		my $loaded-types	= set |::.values.grep(not *.defined);
 		my $builtin-types	= set |%?RESOURCES<classes>.IO.lines.map({::($_)});
-		my %types			:= $loaded-types ∪ $builtin-types;
-		my @types			= %types.keys.grep: ::(~$type<type>);
+		my $types			= $loaded-types ∪ $builtin-types;
+		my @types			= $types.keys.grep(sub (Mu \item) {
+			return item ~~ $test-type & constraints;
+			CATCH {return False}
+		});
 		@ret				= @types if not $type<def>.defined or ~$type<def> eq "U";
 		my %indexes			:= BagHash.new;
 		while @ret.elems < size {
@@ -124,7 +132,7 @@ class Test::Fuzz {
 				if %generator{$sub.^name}:exists {
 					my $item = %generator{$sub.^name}[%indexes{$sub.^name}++];
 					#say $item;
-					@ret.push: $item if $item ~~ ::(~$type<type>) and $item ~~ constraints;
+					@ret.push: $item if $item ~~ $test-type and $item ~~ constraints;
 				}
 			}
 		}
