@@ -1,5 +1,7 @@
 use Test;
 class Test::Fuzz {
+	class Fuzzer {...}
+	my Fuzzer %fuzzers;
 	class Fuzzer {
 		has				$.name;
 		has 			@.data;
@@ -44,7 +46,7 @@ class Test::Fuzz {
 	fuzz-generator("Str") = gather {
 		take "";
 		take "a";
-		take "a" x 9999999;
+		take "a" x 99999;
 		take "áéíóú";
 		take "\n";
 		take "\r";
@@ -52,7 +54,7 @@ class Test::Fuzz {
 		take "\r\n";
 		take "\r\t\n";
 		loop {
-			take (0.chr .. 0xc3bf.chr).roll((^999999).pick).join
+			take (0.chr .. 0xc3bf.chr).roll((^999).pick).join
 		}
 	};
 
@@ -70,34 +72,33 @@ class Test::Fuzz {
 		}
 	};
 
-	my Fuzzer @fuzzers;
 
-	sub fuzz(Routine $func, Int() :$counter = 1000, Callable :$test, :@generators is copy) is export {
+	sub fuzz(Routine $func, Int() :$counter = 100, Callable :$test, :@generators is copy) is export {
 		if @generators {
 			@generators .= map: { ($^type || $^type.^name), all() };
 		} else {
-			@generators = $func.signature.params.map({|(.type.^name ~ .modifier, .constraints)})
+			@generators = $func.signature.params.map({:type(.type.^name ~ .modifier), :constraints(.constraints)})
 		}
 		my $get-data = sub {
 			do if $func.signature.params.elems > 0 {
-				my @data = ([X] @generators.map(-> \type, \constraints {
-					say "type: {type}; constraints: {constraints}; counter: {$counter}";
-					say "\$?CLASS.generate({type}, {constraints}, {$counter || 1000})";
-					$?CLASS.generate(type, constraints, $counter || 1000)
-				})).pick($counter);
-				if @generators.elems <= 2 {
-					@data = @data[0].map(-> $item {[$item]});
-				}
-				@data
+				do if $func.signature.params.elems == 1 {
+					with @generators[0] -> (:$type, :$constraints) {
+						$?CLASS.generate($type, $constraints, $counter).map: -> $item {[$item]}
+					}
+				} else {
+					([X] @generators.map(-> (:$type, :$constraints) {
+						$?CLASS.generate($type, $constraints, $counter)
+					}))
+				}.pick: $counter
 			} else {
-				()
+				Empty
 			}
 		};
 
 		my $name	= $func.name;
 		my $returns	= $func.signature.returns;
 
-		@fuzzers.push(Fuzzer.new(:$name, :$func, :$get-data, :$returns, :$test))
+		%fuzzers.push($name => Fuzzer.new(:$name, :$func, :$get-data, :$returns, :$test))
 	}
 
 	multi trait_mod:<is> (Routine $func, :%fuzzed!) is export {
@@ -109,7 +110,8 @@ class Test::Fuzz {
 	}
 
 	method generate(Test::Fuzz:U: Str \type, Mu:D $constraints, Int $size) {
-		my @ret;
+		my Mu @ret;
+		my Mu @undefined;
 		my $type = type ~~ /^^
 			$<type>	= (\w+)
 			[
@@ -127,28 +129,26 @@ class Test::Fuzz {
 			return so i ~~ test-type;
 			CATCH {return False}
 		});
-		@ret				= @types.grep(sub (Mu \item) {
+		@undefined = @types.grep(sub (Mu \item) {
 			my Mu:U \i = item;
 			return so i ~~ $constraints;
 			CATCH {return False}
 		}) if not $type<def>.defined or ~$type<def> eq "U";
-		my %indexes			:= BagHash.new;
+		my %indexes := BagHash.new;
+		my %gens := @types.map(*.^name) ∩ %generator.keys;
 		while @ret.elems < $size {
-			for @types -> $sub {
-				#say $sub;
-				if %generator{$sub.^name}:exists {
-					my $item = %generator{$sub.^name}[%indexes{$sub.^name}++];
-					#say $item;
-					@ret.push: $item if $item ~~ test-type & $constraints;
-				}
+			for %gens.keys -> $sub {
+				my $item = %generator{$sub}[%indexes{$sub}++];
+				@ret.push: $item if $item ~~ test-type & $constraints;
 			}
 		}
+		@ret.unshift: |@undefined if @undefined;
 		@ret
 	}
 
-	method run-tests(Test::Fuzz:U:) {
-		for @fuzzers -> $fuzz {
-			$fuzz.run;
+	method run-tests(Test::Fuzz:U: @funcs = %fuzzers.keys.sort) {
+		for %fuzzers{@funcs}.map(|*) -> $fuzz {
+			$fuzz.run
 		}
 	}
 }
