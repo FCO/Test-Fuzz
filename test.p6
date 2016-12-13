@@ -24,13 +24,13 @@ sub blu (Prime $blu) is fuzzed({test => not *.is-prime}) {
 sub pla ($value --> True) is fuzzed {}
 
 multi MAIN(Bool :$fuzz!) {
-	Test::Fuzz.run-tests
+	Test::Fuzz.instance.run-tests
 }
 
 multi MAIN(Str :$fuzz!) {
 	my @funcs = $fuzz.split(/\s+/);
 	say "Running tests for {@funcs}";
-	Test::Fuzz.run-tests: @funcs
+	Test::Fuzz.instance.run-tests: @funcs
 }
 
 multi MAIN {

@@ -1,7 +1,10 @@
 use Test;
 class Test::Fuzz {
+	method instance {
+		state $instance = ::?CLASS.new
+	}
 	class Fuzzer {...}
-	my Fuzzer %fuzzers;
+	has Fuzzer %.fuzzers;
 	class Fuzzer {
 		has				$.name;
 		has 			@.data;
@@ -73,7 +76,7 @@ class Test::Fuzz {
 	};
 
 
-	sub fuzz(Routine $func, Int() :$counter = 100, Callable :$test, :@generators is copy) is export {
+	method fuzz(Routine $func, Int() :$counter = 100, Callable :$test, :@generators is copy) is export {
 		if @generators {
 			@generators .= map: { ($^type || $^type.^name), all() };
 		} else {
@@ -98,15 +101,20 @@ class Test::Fuzz {
 		my $name	= $func.name;
 		my $returns	= $func.signature.returns;
 
-		%fuzzers.push($name => Fuzzer.new(:$name, :$func, :$get-data, :$returns, :$test))
+		%!fuzzers.push($name => Fuzzer.new(:$name, :$func, :$get-data, :$returns, :$test));
+	}
+
+	method dump-fuzz is export {
+		note %!fuzzers
 	}
 
 	multi trait_mod:<is> (Routine $func, :%fuzzed!) is export {
-		fuzz($func, |%fuzzed);
+		::?CLASS.instance.fuzz($func, |%fuzzed);
 	}
 
 	multi trait_mod:<is> (Routine $func, :$fuzzed!) is export {
-		fuzz($func);
+		note "fuzz";
+		::?CLASS.instance.fuzz($func);
 	}
 
 	method generate(Test::Fuzz:U: Str \type, Mu:D $constraints, Int $size) {
@@ -146,8 +154,10 @@ class Test::Fuzz {
 		@ret
 	}
 
-	method run-tests(Test::Fuzz:U: @funcs = %fuzzers.keys.sort) {
-		for %fuzzers{@funcs}.map(|*) -> $fuzz {
+	method run-tests(Test::Fuzz:D: +@funcs is copy) {
+		@funcs = %!fuzzers.keys.sort if @funcs.elems == 0;
+		note "run-tests {@funcs.elems}";
+		for %!fuzzers{@funcs}.map(|*) -> $fuzz {
 			$fuzz.run
 		}
 	}
