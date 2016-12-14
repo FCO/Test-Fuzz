@@ -7,6 +7,7 @@
     "provides" : {
         "Test::Fuzz":				"lib/Test/Fuzz.pm6",
         "Test::Fuzz::Fuzzer":		"lib/Test/Fuzz/Fuzzer.pm6",
+        "Test::Fuzz::Generator":	"lib/Test/Fuzz/Generator.pm6",
         "Test::Fuzz::Generators":	"lib/Test/Fuzz/Generators.pm6"
     },
     "depends" : [ ],
