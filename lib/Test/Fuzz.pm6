@@ -1,10 +1,24 @@
 use Test;
+use Test::Fuzz::Generators;
+
+my Iterable %generator;
+
+multi fuzz-generator(::Type) is export is rw {
+	%generator{Type.^name};
+}
+
+multi fuzz-generator(Str \type) is export is rw {
+	%generator{type};
+}
+
+for Test::Fuzz::Generators.generators -> (:$key, :@value) {
+	fuzz-generator($key) = @value
+}
+
+class Test::Fuzz {...}
+my $instance;
+INIT $instance = Test::Fuzz.bless;
 class Test::Fuzz {
-	method instance {
-		state $instance = ::?CLASS.new
-	}
-	class Fuzzer {...}
-	has Fuzzer %.fuzzers;
 	class Fuzzer {
 		has				$.name;
 		has 			@.data;
@@ -35,48 +49,13 @@ class Test::Fuzz {
 			}, $.name
 		}
 	}
-
-	my Iterable %generator;
-
-	multi fuzz-generator(::Type) is export is rw {
-		%generator{Type.^name};
+	method new {!!!}
+	method instance(::?CLASS:U:) {
+		$instance
 	}
+	has Fuzzer %.fuzzers;
 
-	multi fuzz-generator(Str \type) is export is rw {
-		%generator{type};
-	}
-
-	fuzz-generator("Str") = gather {
-		take "";
-		take "a";
-		take "a" x 99999;
-		take "áéíóú";
-		take "\n";
-		take "\r";
-		take "\t";
-		take "\r\n";
-		take "\r\t\n";
-		loop {
-			take (0.chr .. 0xc3bf.chr).roll((^999).pick).join
-		}
-	};
-
-	fuzz-generator("UInt") = gather {
-		take 0;
-		take 1;
-		take 3;
-		take 9999999999;
-		take $_ for (^10000000000).roll(*)
-	};
-
-	fuzz-generator("Int")	= gather {
-		for @( %generator<UInt> ).grep({.defined}) -> $int {
-			take -$int;
-		}
-	};
-
-
-	method fuzz(Routine $func, Int() :$counter = 100, Callable :$test, :@generators is copy) is export {
+	method fuzz(::?CLASS:D: Routine $func, Int() :$counter = 100, Callable :$test, :@generators is copy) is export {
 		if @generators {
 			@generators .= map: { ($^type || $^type.^name), all() };
 		} else {
@@ -102,19 +81,6 @@ class Test::Fuzz {
 		my $returns	= $func.signature.returns;
 
 		%!fuzzers.push($name => Fuzzer.new(:$name, :$func, :$get-data, :$returns, :$test));
-	}
-
-	method dump-fuzz is export {
-		note %!fuzzers
-	}
-
-	multi trait_mod:<is> (Routine $func, :%fuzzed!) is export {
-		::?CLASS.instance.fuzz($func, |%fuzzed);
-	}
-
-	multi trait_mod:<is> (Routine $func, :$fuzzed!) is export {
-		note "fuzz";
-		::?CLASS.instance.fuzz($func);
 	}
 
 	method generate(Test::Fuzz:U: Str \type, Mu:D $constraints, Int $size) {
@@ -154,11 +120,19 @@ class Test::Fuzz {
 		@ret
 	}
 
-	method run-tests(Test::Fuzz:D: +@funcs is copy) {
+	method run-tests(::?CLASS:D: +@funcs is copy) {
 		@funcs = %!fuzzers.keys.sort if @funcs.elems == 0;
-		note "run-tests {@funcs.elems}";
 		for %!fuzzers{@funcs}.map(|*) -> $fuzz {
 			$fuzz.run
 		}
 	}
 }
+
+multi trait_mod:<is> (Routine $func, :%fuzzed!) is export {
+	Test::Fuzz.instance.fuzz($func, |%fuzzed);
+}
+
+multi trait_mod:<is> (Routine $func, :$fuzzed!) is export {
+	Test::Fuzz.instance.fuzz($func);
+}
+
