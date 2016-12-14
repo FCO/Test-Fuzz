@@ -15,10 +15,8 @@ for Test::Fuzz::Generators.generators -> (:$key, :@value) {
 	fuzz-generator($key) = @value
 }
 
-class Test::Fuzz {...}
-my $instance;
-INIT $instance = Test::Fuzz.bless;
 class Test::Fuzz {
+	my $instance = Test::Fuzz.bless;
 	method new {!!!}
 	method instance(::?CLASS:U:) {
 		$instance
