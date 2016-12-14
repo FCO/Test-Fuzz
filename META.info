@@ -1,0 +1,21 @@
+{
+    "perl" : "6.*",
+    "name" : "Test::Fuzz",
+    "version" : "0.1.0",
+    "description" : "Generative Testing",
+    "authors" : [ "Fernando Corrêa de Oliveira" ],
+    "provides" : {
+        "Test::Fuzz":				"lib/Test/Fuzz.pm6",
+        "Test::Fuzz::Fuzzer":		"lib/Test/Fuzz/Fuzzer.pm6",
+        "Test::Fuzz::Generators":	"lib/Test/Fuzz/Generators.pm6"
+    },
+    "depends" : [ ],
+    "test-depends" : [
+        "Test",
+        "Test::META"
+   ],
+    "resources" : [
+		"classes"
+	],
+    "source-url" : "git://github.com/FCO/Test-Fuzz.git"
+}
