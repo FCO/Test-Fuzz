@@ -1,4 +1,5 @@
 use Test::Fuzz::Fuzzer;
+use Test::Fuzz::Generators;
 use Test::Fuzz::Generator;
 
 class Test::Fuzz {

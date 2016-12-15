@@ -1,20 +1,4 @@
 unit class Test::Fuzz::Generator;
-use Test::Fuzz::Generators;
-
-my Iterable %generator;
-
-multi fuzz-generator(::Type) is export is rw {
-	%generator{Type.^name};
-}
-
-multi fuzz-generator(Str \type) is export is rw {
-	%generator{type};
-}
-
-for Test::Fuzz::Generators.generators -> (:$key, :@value) {
-	fuzz-generator($key) = @value
-}
-
 
 method generate(Str \type, Mu:D $constraints, Int $size) {
 	my Mu @ret;
@@ -41,6 +25,14 @@ method generate(Str \type, Mu:D $constraints, Int $size) {
 		return so i ~~ $constraints;
 		CATCH {return False}
 	}) if not $type<def>.defined or ~$type<def> eq "U";
+
+	my %generator
+		<== map({.^name => .generate-samples})
+		<== grep({try {.?generate-samples}})
+		#<== grep({.^can("generate-samples") && .?generate-samples})
+		<== @types
+	;
+
 	my %indexes := BagHash.new;
 	my %gens := @types.map(*.^name) ∩ %generator.keys;
 	while @ret.elems < $size {
