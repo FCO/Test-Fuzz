@@ -1,21 +1,19 @@
-unit class Test::Fuzz::Generator;
+unit role Test::Fuzz::Generator;
+has $.fuzz-generator = True;
 
-method generate(Str \type, Mu:D $constraints, Int $size) {
+method type			{...}
+method named		{...}
+method constraints	{...}
+
+method generate(Int() $size = 100) {
 	my Mu @ret;
 	my Mu @undefined;
-	my $type = type ~~ /^^
-		$<type>	= (\w+)
-		[
-			':'
-			$<def>	= (<[UD]>)
-		]?
-	$$/;
-	my \test-type		= ::(~$type<type>);
-	my $loaded-types	= set |::.values.grep(not *.defined);
-	my $builtin-types	= set |%?RESOURCES<classes>.IO.lines.map({::($_)});
-	my $types			= $loaded-types ∪ $builtin-types;
-	#my $types			= $builtin-types;
-	my @types			= $types.keys.grep(sub (Mu \item) {
+	my Mu:D $constraints	= self.constraints;
+	my \test-type			= self.type;
+	my $loaded-types		= set |::.values.grep(not *.defined);
+	my $builtin-types		= set |%?RESOURCES<classes>.IO.lines.map({::($_)});
+	my $types				= $loaded-types ∪ $builtin-types;
+	my @types				= $types.keys.grep(sub (Mu \item) {
 		my Mu:U \i = item;
 		return so i ~~ test-type;
 		CATCH {return False}
@@ -24,12 +22,11 @@ method generate(Str \type, Mu:D $constraints, Int $size) {
 		my Mu:U \i = item;
 		return so i ~~ $constraints;
 		CATCH {return False}
-	}) if not $type<def>.defined or ~$type<def> eq "U";
+	}) unless self.modifier eq ":D";
 
 	my %generator
 		<== map({.^name => .generate-samples})
 		<== grep({try {.?generate-samples}})
-		#<== grep({.^can("generate-samples") && .?generate-samples})
 		<== @types
 	;
 
@@ -40,6 +37,7 @@ method generate(Str \type, Mu:D $constraints, Int $size) {
 			my $item = %generator{$sub}[%indexes{$sub}++];
 			@ret.push: $item if $item ~~ test-type & $constraints;
 		}
+		@ret .= unique
 	}
 	@ret.unshift: |@undefined if @undefined;
 	@ret
