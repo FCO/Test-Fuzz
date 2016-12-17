@@ -1,4 +1,4 @@
-use lib ".";
+use lib "lib";
 use Test::Fuzz;
 
 sub bla (Int $bla, Int $ble --> UInt) is fuzzed {
