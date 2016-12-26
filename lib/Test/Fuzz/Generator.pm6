@@ -4,10 +4,13 @@ has $.fuzz-generator = True;
 method type			{...}
 method named		{...}
 method constraints	{...}
+my role Unique {};
 
 method generate(Int() $size = 100) {
 	my Mu @ret;
 	my Mu @undefined;
+	my $hcoded;
+	$hcoded = self.constraint_list.first({.defined and $_ !~~ Callable});
 	my Mu:D $constraints	= self.constraints;
 	my \test-type			= self.type;
 	my $loaded-types		= set |::.values.grep(not *.defined);
@@ -30,14 +33,15 @@ method generate(Int() $size = 100) {
 		<== @types
 	;
 
-	my %indexes := BagHash.new;
-	my %gens := @types.map(*.^name) ∩ %generator.keys;
+	my %indexes	:= BagHash.new;
+	my %gens	:= @types.map(*.^name) ∩ %generator.keys;
 	while @ret.elems < $size {
+		@ret.push: $hcoded but Unique if $hcoded.defined;
 		for %gens.keys -> $sub {
 			my $item = %generator{$sub}[%indexes{$sub}++];
 			@ret.push: $item if $item ~~ test-type & $constraints;
 		}
-		@ret .= unique
+		@ret .= unique: :with({$^a === $^b and not $^a ~~ Unique})
 	}
 	@ret.unshift: |@undefined if @undefined;
 	@ret
