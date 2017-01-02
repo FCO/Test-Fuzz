@@ -28,8 +28,8 @@ method generate(Int() $size = 100) {
 	}) unless self.modifier eq ":D";
 
 	my %generator
-		<== map({.^name => .generate-samples})
-		<== grep({try {.?generate-samples}})
+		<== map({.^name => lazy .generate-samples})
+		<== grep({try {lazy .?generate-samples}})
 		<== @types
 	;
 
