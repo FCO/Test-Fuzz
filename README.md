@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/FCO/Test-Fuzz.svg?branch=master)](https://travis-ci.org/FCO/Test-Fuzz)
 
-[https://perl6advent.wordpress.com/2016/12/22/day-22-generative-testing/]()
+[https://perl6advent.wordpress.com/2016/12/22/day-22-generative-testing/]([https://perl6advent.wordpress.com/2016/12/22/day-22-generative-testing/)
 
 ```perl6
 use lib ".";
