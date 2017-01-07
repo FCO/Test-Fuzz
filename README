@@ -10,5 +10,5 @@ sub ble (Int $ble) is fuzzed {
 }
 
 multi MAIN(Bool :$fuzz!) {
-	Test::Fuzz.run-tests
+	run-tests
 }
