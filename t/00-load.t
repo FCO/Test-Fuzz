@@ -1,4 +1,6 @@
 use Test;
+use Test::META;
+meta-ok;
 
 use lib "lib";
 use-ok "Test::Fuzz";
