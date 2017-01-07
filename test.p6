@@ -1,4 +1,4 @@
-use lib ".";
+use lib "lib";
 use Test::Fuzz;
 
 sub bla (Int $bla, Int $ble --> UInt) is fuzzed {
@@ -24,13 +24,12 @@ sub blu (Prime $blu) is fuzzed({test => not *.is-prime}) {
 sub pla ($value --> True) is fuzzed {}
 
 multi MAIN(Bool :$fuzz!) {
-	Test::Fuzz.instance.run-tests
+	run-tests
 }
 
 multi MAIN(Str :$fuzz!) {
 	my @funcs = $fuzz.split(/\s+/);
-	say "Running tests for {@funcs}";
-	Test::Fuzz.instance.run-tests: @funcs
+	run-tests @funcs
 }
 
 multi MAIN {
