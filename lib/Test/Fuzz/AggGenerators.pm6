@@ -1,5 +1,6 @@
 class ToRemove is Any {}
 
+#| Test::Fuzz::AggGenerators: Role to be "does"ed on function signatures
 role Test::Fuzz::AggGenerators {
 	use Test::Fuzz::Generator;
 
@@ -27,7 +28,8 @@ role Test::Fuzz::AggGenerators {
 		|@tmp
 	}
 
-	method generate-samples(Int:D $size = 100) {
+	#| generate Captures for the signature
+	method generate-samples(Int:D $size = 100 --> Iterable) {
 		([X] self!build-possibilities($size), ToRemove.new).pick($size).map({.grep(* !~~ ToRemove).Array}).map: {.Capture}
 	}
 }

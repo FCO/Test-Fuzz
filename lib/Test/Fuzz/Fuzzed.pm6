@@ -1,4 +1,9 @@
-unit role Test::Fuzz::Fuzzed[:$returns, :&test];
+#| role Test::Fuzz::Fuzzed: Role that will be "does"ed on the fuzzes function
+#| has 2 optional parameters
+unit role Test::Fuzz::Fuzzed[
+	:$returns,	#= :$returns
+	:&test		#= :&test
+];
 use Test::Fuzz::AggGenerators;
 use Test;
 
@@ -7,6 +12,7 @@ has Capture		@.data;
 has 			$.returns	= $returns;
 has				&.test		= &test;
 
+#| required signature method
 method signature {...}
 
 method compose {
@@ -16,6 +22,7 @@ method compose {
 	nextsame;
 }
 
+#| Get the sample from the signature and use it for tests
 method run-tests(Int:D $size = 100) {
 	subtest {
 		@!data = $.signature.generate-samples($size);

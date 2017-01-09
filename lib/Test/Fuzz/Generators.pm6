@@ -1,3 +1,4 @@
+#| Augmenting classes to create generate-samples method
 unit module Test::Fuzz::Generators;
 use MONKEY-TYPING;
 augment class Int {

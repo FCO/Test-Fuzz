@@ -1,3 +1,4 @@
+#| role Test::Fuzz::Generator: Role to be "does"ed on the signature param
 unit role Test::Fuzz::Generator;
 has $.fuzz-generator = True;
 
@@ -6,6 +7,7 @@ method named		{...}
 method constraints	{...}
 my role Unique {};
 
+#| Method that generate samples of that param
 method generate(Int() $size = 100) {
 	my Mu @ret;
 	my Mu @undefined;
