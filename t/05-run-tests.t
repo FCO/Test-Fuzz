@@ -1,8 +1,9 @@
 use Test;
-plan 6;
+plan 7;
 
 use lib "lib";
 
+use Test;
 use-ok "Test::Fuzz";
 
 {
@@ -33,4 +34,16 @@ use-ok "Test::Fuzz";
 	Test::Fuzz::add-func($h);
 
 	run-tests <f2 g2>;
+}
+
+{
+	use Test::Fuzz;
+
+	my $runs = 0;
+	my $real-runs = 0;
+	sub func(Int $a) is fuzzed { ++$real-runs; }
+
+	run-tests :$runs;
+
+	ok $runs == $real-runs, "Runs: $runs, Real-Runs: $real-runs";
 }
