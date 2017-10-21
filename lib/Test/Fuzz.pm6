@@ -9,14 +9,16 @@ our sub add-func(Routine $f) {
 }
 
 #| trait is fuzzed can receive params :returns and :test
-multi trait_mod:<is> (Routine $func, :$fuzzed! (:$returns, :&test)) is export {
+multi trait_mod:<is> (Routine $func,
+		:$fuzzed! where Map|List (:$returns, :&test)
+) is export {
 	$func does Test::Fuzz::Fuzzed[:$returns, :&test];
 	$func.compose;
 	add-func $func
 }
 
 #| trait is fuzzed
-multi trait_mod:<is> (Routine $func, :$fuzzed!) is export {
+multi trait_mod:<is> (Routine $func, Bool :$fuzzed!) is export {
 	$func does Test::Fuzz::Fuzzed;
 	$func.compose;
 	add-func $func
