@@ -39,8 +39,8 @@ use-ok "Test::Fuzz";
 {
 	use Test::Fuzz;
 
-	my $runs = (^100).pick; #Number of fuzzy tests to run.
-	my $real-runs = 0;      #Number of fuzzy tests actually run.
+	my $runs = (1..100).pick; #Number of fuzzy tests to run.
+	my $real-runs = 0;        #Number of fuzzy tests actually run.
 	sub func(Int $a) is fuzzed { ++$real-runs; }
 
 	run-tests @('func'), :$runs;
