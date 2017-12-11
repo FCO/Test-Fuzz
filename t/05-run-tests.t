@@ -1,5 +1,5 @@
 use Test;
-plan 9;
+plan 14;
 
 use lib "lib";
 
@@ -46,4 +46,24 @@ use-ok "Test::Fuzz";
 	run-tests @('func'), :$runs;
 
 	ok $runs == $real-runs, "Runs: $runs, Real-Runs: $real-runs";
+}
+
+{
+	use Test::Fuzz;
+
+	my $runs = (1..100).pick;    #Number of fuzzy tests to run.
+	my @real-runs is default(0); #Increcmentor.
+
+	#Make a multi sub to play with.
+	multi sub func(Int $a) { ++@real-runs[0]; }
+	multi sub func(Str $a) { ++@real-runs[1]; }
+
+	#Add the multi sub to the fuzz list.
+	fuzz &func;
+	run-tests @('func'), :$runs;
+
+	#Make sure each function has the correct number of runs.
+	for @real-runs -> $real {
+		is $real, $runs, 'Can fuzz a multi sub.';
+	}
 }
