@@ -16,22 +16,28 @@ can-ok $sig, "generate-samples";
 
 subtest {
     #Try to compose and generate samples from this signature.
+    my $compose = Promise.new;
+    my $gen-samp = Promise.new;
     my $generation = start {
         #Set things up.
         $sig.compose;
         #Make sure that each parameter was taken care of.
         is $sig.params.grep(* !~~ Test::Fuzz::Generator).elems, 0,
-        "Signature was composed";
+            "Signature was composed";
+        $compose.keep;
 
         #Generate samples of each parameter.
         my $samp = 5;
         my @samples = $sig.generate-samples: $samp;
         is @samples.elems, $samp, "Generated $samp samples";
+        $gen-samp.keep;
     }
 
     #Set a timer to check if this hangs.
     my $timer = Promise.in(15).then: {
-        flunk "Timer expired" if $generation.status ~~ Planned;
+        flunk "Hangs on "
+            ~ ("compose" unless ?$compose)
+            ~ ("generate-samples" unless ?$gen-samp);
     }
 
     #Wait for either the generator or timer to finish.
