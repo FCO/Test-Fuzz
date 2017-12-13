@@ -37,7 +37,7 @@ method generate(Int() $size = 100) {
 
 	my %indexes	:= BagHash.new;
 	my %gens	:= @types.map(*.^name) ∩ %generator.keys;
-	while @ret.elems < $size {
+	while (@ret.elems < $size and %generator) {
 		@ret.push: $hcoded but Unique if $hcoded.defined;
 		for %gens.keys -> $sub {
 			my $item = %generator{$sub}[%indexes{$sub}++];
@@ -48,4 +48,3 @@ method generate(Int() $size = 100) {
 	@ret.unshift: |@undefined if @undefined;
 	@ret
 }
-
