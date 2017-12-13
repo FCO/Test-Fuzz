@@ -29,7 +29,7 @@ subtest {
         #Generate samples of each parameter.
         my $samp = 5;
         my @samples = $sig.generate-samples: $samp;
-        is @samples.elems, $samp, "Generated $samp samples";
+        is @samples.elems, $samp, "Generated $samp samples: {@samples.gist}";
         $gen-samp.keep;
     }
 
