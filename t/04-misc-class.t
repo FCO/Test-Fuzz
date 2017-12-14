@@ -24,12 +24,16 @@ subtest {
         #Make sure that each parameter was taken care of.
         is $sig.params.grep(* !~~ Test::Fuzz::Generator).elems, 0,
             "Signature was composed";
+        #Mark this step as complete.
         $compose.keep;
 
         #Generate samples of each parameter.
         my $samp = 5;
         my @samples = $sig.generate-samples: $samp;
+        #Make sure that the correct number of samples are generated.
+        todo "Generate samples for misc classes";
         is @samples.elems, $samp, "Generated $samp samples: {@samples.gist}";
+        #Mark this step as complete.
         $gen-samp.keep;
     }
 
