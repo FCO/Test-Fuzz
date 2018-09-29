@@ -31,7 +31,7 @@ method generate(Int() $size = 100) {
 
 	my %generator
 		<== map({.^name => lazy .generate-samples})
-		<== grep({try {lazy .?generate-samples}})
+		<== grep({try {lazy .generate-samples}})
 		<== @types
 	;
 
