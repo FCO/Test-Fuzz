@@ -1,4 +1,4 @@
-use lib "lib";
+use lib <lib ../../lib>;
 use Test::Fuzz;
 
 sub bla (Int $bla, Int $ble --> UInt) is fuzzed {
@@ -9,7 +9,7 @@ sub ble (Int $ble) is fuzzed {
 	die "it is prime!" if $ble.is-prime
 }
 
-sub bli (Int $bli) is fuzzed(:counter(6)) {}
+sub bli (Int $bli) is fuzzed(:42returns, :test{.so}) {}
 
 sub blo (UInt $blo) is fuzzed {
 	return $blo
