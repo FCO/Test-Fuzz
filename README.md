@@ -1,7 +1,10 @@
 # Test::Fuzz
 [![Build Status](https://travis-ci.org/FCO/Test-Fuzz.svg?branch=master)](https://travis-ci.org/FCO/Test-Fuzz)
 
-[https://perl6advent.wordpress.com/2016/12/22/day-22-generative-testing/]([https://perl6advent.wordpress.com/2016/12/22/day-22-generative-testing/)
+This module
+performs
+[generative testing]([https://perl6advent.wordpress.com/2016/12/22/day-22-generative-testing/) on
+Perl 6 functions.
 
 ## Synopsis
 ```perl6
@@ -36,8 +39,13 @@ multi MAIN(Bool :$fuzz!) {
 ```
 
 ## Description
-`Test::Fuzz` is a tool for `generative/fuzz testing`.
-Add the `is fuzzed` trait and `Test::Fuzz` will try to figure out the best generators to use to test your function. If the function was already made, pass it to the `fuzz` function for the same effect.
+`Test::Fuzz` is a tool
+for
+[*fuzzing* or generative/fuzz testing`](https://en.wikipedia.org/wiki/Fuzzing).
+
+Add the `is fuzzed` trait to a method or function and `Test::Fuzz`
+will try to figure out the best generators to use to test your
+function. If the function was already created without this trait, pass it to the `fuzz` function for the same effect.
 
 To run the tests, just call the `run-tests` function.
 
