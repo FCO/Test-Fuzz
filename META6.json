@@ -18,7 +18,9 @@
         "Test::META"
     ],
     "resources"     : [
-        "classes"
+        "classes",
+        "examples/test.p6",
+        "examples/test2.p6"
     ],
     "source-url"    : "git://github.com/FCO/Test-Fuzz.git"
 }
