@@ -2,6 +2,7 @@
   "authors": [
     "Fernando Correa de Oliveira"
   ],
+  "auth": "zef:FCO",
   "build-depends": [
   ],
   "depends": [
